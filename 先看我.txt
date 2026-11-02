@@ -1,0 +1,98 @@
+﻿==================================================
+  PhoneMic —— 把手机当作电脑的临时麦克风
+  3 分钟上手
+==================================================
+
+【第一步】确认电脑上有 Node.js
+  按 Win+R，输入 cmd 回车，然后输入：  node -v
+  如果出现类似 v18.x / v20.x / v22.x 的字样，就可以继续。
+  如果提示「不是内部或外部命令」，去 https://nodejs.org
+  下载 LTS 版本装上（一路下一步即可），装完再试一次。
+
+
+【第二步】双击 start.bat
+  会出现一个黑色窗口，一直留着别关。
+  窗口里会显示一个二维码和一行地址，类似：
+     https://192.168.1.34:8443/?k=a1b2c3d4
+  同时电脑会自动打开一个控制台网页（也是二维码）。
+
+  注意：如果第一次运行时 Windows 弹出防火墙提示，
+  一定要点「允许访问」，否则手机连不上。
+
+
+【第三步】用手机扫二维码
+  1) 手机必须和电脑连同一个 Wi-Fi。
+  2) 扫码后浏览器会警告「您的连接不是私密连接 / 此连接不安全」，
+     点「高级」→「继续前往」即可。这是自签名证书的正常提示，
+     因为手机浏览器只允许 https 页面使用麦克风。
+  3) 点页面上那个大话筒按钮，允许使用麦克风。
+  4) 说话，声音就会从电脑播放出来。
+     （只能自己听见；想进游戏语音，看下面的「想在游戏里用」）
+
+
+【没声音 / 连不上？】
+  · 电脑没声音：可能是输出到了没接的音箱（比如显示器 HDMI）。
+    关掉窗口，重新打开 cmd，进到本文件夹执行：
+        node server.js --list-devices
+    看清楚名字，然后：
+        node server.js --device "Realtek"
+  · 手机连不上：多半是防火墙。用管理员身份打开 cmd 执行：
+        netsh advfirewall firewall add rule name="PhoneMic" dir=in action=allow protocol=TCP localport=8443
+  · 声音断断续续：把缓冲调大一点
+        node server.js --latency 200
+  · 公司/酒店 Wi-Fi 可能开了「设备隔离」，手机和电脑互相看不到，
+    这种网络没办法，换个 Wi-Fi 或者用手机热点。
+
+
+【想在游戏里用（让队友听见你）】
+  需要先装一个免费的虚拟声卡，只需装一次：
+
+  1) 打开 https://vb-audio.com/Cable/ 下载 VBCABLE_Driver_Pack*.zip
+  2) 解压，右键 VBCABLE_Setup_x64.exe →「以管理员身份运行」
+     → 点 Install Driver
+  3) 重启电脑（必须）
+  4) 回到本文件夹，双击 start-mic.bat
+
+  然后进游戏：设置 → 音频/语音 → 麦克风，选
+        CABLE Output (VB-Audio Virtual Cable)
+  进游戏语音测试，手机说话，队友就能听见了。
+
+  更省事：Windows「声音设置 → 更多声音设置 → 录制」里，
+  把 CABLE Output 设为「默认设备」和「默认通信设备」，
+  以后所有游戏都会自动用它，不用一个个去选。
+
+  如果队友听到你的游戏声 / 麦克风里全是桌面声音：
+    说明 Windows 把「默认通信播放设备」也设成了 CABLE Input。
+    按 Win+R 输入 mmsys.cpl 回车：
+      播放 → 右键耳机/音箱 → 设为默认设备 + 设为默认通信设备
+      录制 → 右键 CABLE Output → 设为默认设备 + 设为默认通信设备
+    然后运行：node server.js --doctor 复查。
+    （也可以直接双击 doctor.bat）
+
+  外放时出现啸叫 / 怪声：
+    手机麦克风听到了电脑音响，形成循环。打游戏请用 start-mic.bat；
+    要自己听就用 --monitor，但必须戴耳机，不要外放。
+
+  注意：装完后如果电脑自己没声音了，是 Windows 把默认播放
+  设备切到了 CABLE Input。去「声音设置」把默认播放设备改回
+  耳机/音箱即可。程序是按名字直接输出的，不看系统默认设备。
+
+  想自己也能听见（可选，会有约 0.1 秒延迟）：
+        start-mic.bat --monitor
+
+  用的是 VoiceMeeter / 其他虚拟声卡？
+        node server.js --cable "设备名片段"
+  （先用 node server.js --list-devices 看名字，带 ← 的就是）
+
+
+【其他】
+  · 界面语言：网页右上角点 EN / 中文 切换（会记住）；
+    控制台跟随系统语言，也可以强制：node server.js --lang en
+  · 英文说明书：README.en.md（English documentation）
+  · 不在同一个 Wi-Fi 也能用：装 cloudflared 后执行
+        node server.js --tunnel
+    会得到一个正规 https 的公网链接，手机用 4G 也能连。
+  · 更多参数：node server.js --help
+  · 完整说明：用记事本或 VS Code 打开 README.md
+
+==================================================

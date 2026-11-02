@@ -1,0 +1,20 @@
+node_modules/
+build/
+certs/
+*.wav
+run.log
+run.err
+*.log
+*.err
+test.wav
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/launch.json
+.idea/
+
+# local release artifacts
+*.zip

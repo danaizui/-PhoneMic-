@@ -1,0 +1,41 @@
+{
+  "name": "phonemic",
+  "version": "1.2.0",
+  "description": "Use your phone as your computer's microphone — LAN QR code, public tunnel, and a virtual-cable game microphone mode. Bilingual UI (Chinese/English).",
+  "main": "server.js",
+  "license": "MIT",
+  "author": "danaizui",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danaizui/-PhoneMic-.git"
+  },
+  "homepage": "https://github.com/danaizui/-PhoneMic-#readme",
+  "bugs": {
+    "url": "https://github.com/danaizui/-PhoneMic-/issues"
+  },
+  "keywords": [
+    "microphone",
+    "phone",
+    "webrtc",
+    "virtual-audio-cable",
+    "voip",
+    "windows",
+    "i18n"
+  ],
+  "scripts": {
+    "start": "node server.js",
+    "game": "node server.js --mic",
+    "game:monitor": "node server.js --mic --monitor",
+    "devices": "node server.js --list-devices",
+    "doctor": "node server.js --doctor",
+    "tunnel": "node server.js --tunnel"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "selfsigned": "^2.4.1",
+    "ws": "^8.18.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

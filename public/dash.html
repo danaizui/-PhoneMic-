@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-CN" data-title="dash.title">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhoneMic 控制台</title>
+<script src="/i18n.js"></script>
+<style>
+  :root {
+    --bg:#0a0e13; --card:#121821; --line:#223040; --text:#e8eef6;
+    --dim:#8595a8; --accent:#38d39f; --danger:#ff6b6b; --warn:#ffb454;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font:15px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    display:flex; justify-content:center; padding:28px 20px 60px;
+    background-image: radial-gradient(90% 50% at 50% -10%, #14324a 0%, transparent 60%);
+  }
+  .wrap { width:100%; max-width:920px; }
+  header { display:flex; align-items:baseline; gap:12px; margin-bottom:22px; }
+  h1 { font-size:20px; margin:0; font-weight:650; letter-spacing:.2px; }
+  header .sub { color:var(--dim); font-size:13px; }
+  .grid { display:grid; grid-template-columns: 320px 1fr; gap:18px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin:0 0 14px; font-weight:600; }
+
+  .qr { display:grid; place-items:center; background:#fff; border-radius:14px; padding:12px; }
+  .qr img { width:100%; max-width:260px; display:block; }
+  .url {
+    margin-top:14px; font-size:12.5px; word-break:break-all; color:var(--dim);
+    background:#0d141c; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-family: ui-monospace, Consolas, monospace; line-height:1.5;
+  }
+  .url b { color:var(--accent); }
+  .copy { margin-top:10px; width:100%; padding:10px; border-radius:10px; cursor:pointer;
+    border:1px solid var(--line); background:#18212c; color:var(--text); font-size:13.5px; }
+  .copy:hover { background:#1f2b38; }
+
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:8px 16px; font-size:13.5px; }
+  .kv dt { color:var(--dim); }
+  .kv dd { margin:0; font-variant-numeric: tabular-nums; }
+
+  .meter { height:8px; background:#0d141c; border-radius:99px; overflow:hidden; margin-top:6px; }
+  .meter i { display:block; height:100%; width:0%; border-radius:99px;
+    background:linear-gradient(90deg,var(--accent),#22b8cf); transition:width .07s linear; }
+
+  .client { border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px; background:#0f161f; }
+  .client .top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .client .name { font-weight:600; font-size:14px; }
+  .client .tag { font-size:11.5px; color:var(--dim); }
+  .client .tag.muted { color:var(--warn); }
+  .client.warn { border-color:#5a3a17; }
+
+  .empty { color:#5b6b7d; font-size:13.5px; text-align:center; padding:26px 0; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; box-shadow:0 0 9px var(--accent); }
+  a { color:#5cc8ff; }
+  .foot { margin-top:18px; color:#4d5c6e; font-size:12px; line-height:1.8; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:99px; background:#1a2531; font-size:11.5px; color:var(--dim); }
+  .hint { display:none; margin-bottom:16px; padding:12px 14px; border-radius:12px;
+    background:#10261f; border:1px solid #1d5a44; color:#b9f2dc; font-size:13px; line-height:1.65; }
+  .hint b { color:var(--accent); }
+  .hint code { background:#0a1a15; border:1px solid #1d5a44; border-radius:6px; padding:1px 6px;
+    font-family: ui-monospace, Consolas, monospace; color:#e8eef6; }
+  .route { display:none; margin-bottom:18px; border-color:#5a3a17; background:#1d160d; }
+  .route h2 { color:var(--warn); text-transform:none; letter-spacing:0; font-size:14px; margin-bottom:8px; }
+  .route div { font-size:13.5px; line-height:1.8; white-space:pre-line; color:#f0d7b4; }
+  .langbtn { margin-left:auto; padding:4px 11px; border-radius:99px; cursor:pointer;
+    border:1px solid var(--line); background:#18212c; color:var(--dim); font-size:12px; }
+  .langbtn:hover { background:#1f2b38; color:var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎙 PhoneMic</h1>
+    <span class="sub" data-i18n="dash.sub">用手机当电脑的临时麦克风</span>
+    <button class="langbtn" type="button" data-lang-toggle>EN</button>
+  </header>
+
+  <div class="card route" id="route-box">
+    <h2 data-i18n="dash.routeTitle">⚠ 音频路由有问题</h2>
+    <div id="route-warn"></div>
+    <button class="copy" id="open-sound" style="margin-top:12px;max-width:260px" data-i18n="dash.openSound">打开声音控制面板</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 data-i18n="dash.qrTitle">手机扫码进入</h2>
+      <div class="qr"><img id="qr" alt="二维码" data-i18n-aria="dash.qrAlt"></div>
+      <div class="url" id="url">…</div>
+      <button class="copy" id="copy" data-i18n="dash.copy">复制链接</button>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="dash.statusTitle">运行状态</h2>
+      <div class="hint" id="mic-hint">
+        <b data-i18n="dash.gameReady">游戏麦克风已就绪</b><br>
+        <span id="mic-body"></span><br>
+        <span data-i18n="dash.gameWarn">不要选成扬声器或 Stereo Mix。</span>
+        <div id="mic-route" style="margin-top:8px;font-size:12.5px;opacity:.9"></div>
+      </div>
+      <dl class="kv">
+        <dt data-i18n="dash.kPlayer">音频输出</dt><dd id="s-player">—</dd>
+        <dt data-i18n="dash.kDevice">输出设备</dt><dd id="s-device">—</dd>
+        <dt data-i18n="dash.kMonitor">监听输出</dt><dd id="s-monitor">未开启</dd>
+        <dt data-i18n="dash.kRate">输出采样率</dt><dd id="s-rate">—</dd>
+        <dt data-i18n="dash.kLatency">抖动缓冲</dt><dd id="s-lat">—</dd>
+        <dt data-i18n="dash.kUptime">已运行</dt><dd id="s-up">—</dd>
+        <dt data-i18n="dash.kRecord">录音</dt><dd id="s-rec">未开启</dd>
+      </dl>
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim)">
+          <span data-i18n="dash.kLevel">总输出电平</span><span id="s-level-txt">0%</span>
+        </div>
+        <div class="meter"><i id="s-level"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2 data-i18n="dash.clientsTitle">已连接的手机</h2>
+    <div id="clients"><div class="empty" data-i18n="dash.clientsEmpty">还没有手机连上来，用上面的二维码扫一下</div></div>
+  </div>
+
+  <div class="foot">
+    <span class="pill" data-i18n="dash.tip">提示</span>
+    <span data-i18n-html="dash.foot">手机连上后在页面里点一下话筒按钮才会开始收音；首次连接需要接受一次自签名证书警告。</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const t = (key, vars) => window.PMI18N.t(key, vars);
+  let currentURL = '';
+
+  const RECORD_NAMES = {
+    'VB-CABLE': 'CABLE Output (VB-Audio Virtual Cable)',
+    'VoiceMeeter': 'VoiceMeeter Output (VB-Audio VoiceMeeter VAIO)',
+    'Virtual Audio Cable': 'Line 1 (Virtual Audio Cable)',
+    'Voicemod': 'Voicemod Virtual Audio Device (WDM)',
+  };
+
+  function fmtUptime(s) {
+    s = Math.floor(s);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (h) return t('dash.upH', { h, m });
+    if (m) return t('dash.upM', { m, s: sec });
+    return t('dash.upS', { s: sec });
+  }
+
+  function renderClients(list) {
+    const box = $('clients');
+    if (!list.length) {
+      box.innerHTML = `<div class="empty">${escapeHtml(t('dash.clientsEmpty'))}</div>`;
+      return;
+    }
+    box.innerHTML = list.map((c) => {
+      const pct = Math.min(100, c.rms * 320);
+      const tag = c.muted
+        ? `<span class="tag muted">${escapeHtml(t('dash.muted'))}</span>`
+        : `<span class="tag">${(c.rate / 1000).toFixed(1)} kHz</span>`;
+      const warn = c.underruns > 40 ? ' warn' : '';
+      return `<div class="client${warn}">
+        <div class="top">
+          <span class="name"><span class="dot"></span> ${escapeHtml(c.name)}</span>
+          ${tag}
+        </div>
+        <div class="meter"><i style="width:${pct}%"></i></div>
+        <div class="top" style="margin-top:6px">
+          <span class="tag">${escapeHtml(t('dash.buffer', { ms: c.bufferedMs, mb: (c.bytes / 1024 / 1024).toFixed(1) }))}</span>
+          <span class="tag">${escapeHtml(c.underruns > 0 ? t('dash.dropouts', { n: c.underruns }) : t('dash.smooth'))}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch('/api/status?lang=' + encodeURIComponent(window.PMI18N.lang), { cache: 'no-store' });
+      const d = await r.json();
+
+      if (d.mainURL && d.mainURL !== currentURL) {
+        currentURL = d.mainURL;
+        $('url').textContent = d.mainURL;
+        $('qr').src = '/api/qr.svg?t=' + Date.now();
+      }
+
+      $('s-player').textContent = d.gameMic ? t('dash.playerGame')
+        : d.player === 'native' ? t('dash.playerNative')
+          : d.player === 'browser' ? t('dash.playerBrowser') : t('dash.playerNone');
+      $('s-device').textContent = d.output && d.output.name ? d.output.name : '—';
+      $('s-monitor').textContent = d.monitor && d.monitor.name
+        ? t('dash.monitorHeadphones', { name: d.monitor.name })
+        : t('dash.off');
+
+      const hint = $('mic-hint');
+      if (d.gameMic) {
+        hint.style.display = 'block';
+        const outName = (d.output && d.output.name) || '';
+        let rec = null;
+        if (/cable[- ]*[ab]\s*input/i.test(outName)) rec = outName.replace(/input/i, 'Output');
+        if (!rec) rec = RECORD_NAMES[d.output && d.output.label];
+        if (!rec && /input/i.test(outName)) rec = outName.replace(/input/i, 'Output');
+        rec = rec || t('dash.micFallback');
+        $('mic-body').innerHTML = t('dash.gameBody', { device: escapeHtml(rec) });
+      } else {
+        hint.style.display = 'none';
+      }
+
+      const ac = d.audioCheck || null;
+      const routeBox = $('route-box');
+      if (ac && ac.warnings && ac.warnings.length) {
+        routeBox.style.display = 'block';
+        $('route-warn').textContent = ac.warnings.join('\n\n');
+      } else {
+        routeBox.style.display = 'none';
+      }
+      if (d.gameMic && ac && ac.defaults) {
+        const r1 = ac.defaults.recording || '';
+        const r2 = ac.defaults.recordingComm || '';
+        const unknown = t('common.unknown');
+        const isCableOut = (s) => /cable[- ]*[ab]?\s*output/i.test(s || '');
+        let txt = (r2 && r2 !== r1)
+          ? t('dash.micRoute', { mic: r1 || unknown, comm: r2 })
+          : t('dash.micRouteShort', { mic: r1 || unknown });
+        txt += (isCableOut(r1) && isCableOut(r2 || r1))
+          ? t('dash.micRouteOk')
+          : t('dash.micRouteBad');
+        $('mic-route').textContent = txt;
+      }
+      $('s-rate').textContent = (d.outRate / 1000).toFixed(1) + ' kHz';
+      $('s-lat').textContent = d.latencySetting + ' ms';
+      $('s-up').textContent = fmtUptime(d.uptime);
+      $('s-rec').textContent = d.record ? d.record : t('dash.off');
+
+      const pct = Math.min(100, d.level * 130);
+      $('s-level').style.width = pct + '%';
+      $('s-level-txt').textContent = Math.round(pct) + '%';
+
+      renderClients(d.clients || []);
+    } catch (e) {
+      $('s-player').textContent = t('dash.offline');
+    }
+  }
+
+  $('open-sound').addEventListener('click', () => {
+    fetch('/api/open-sound', { method: 'POST' }).catch(() => {});
+  });
+
+  $('copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(currentURL);
+      $('copy').textContent = t('dash.copied');
+      setTimeout(() => { $('copy').textContent = t('dash.copy'); }, 1500);
+    } catch (e) {
+      $('copy').textContent = t('dash.copyManual');
+    }
+  });
+
+  poll();
+  setInterval(poll, 800);
+})();
+</script>
+</body>
+</html>

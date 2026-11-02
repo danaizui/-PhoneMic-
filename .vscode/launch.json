@@ -1,0 +1,95 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "启动 PhoneMic / Start",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}\\server.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "启动 PhoneMic（不开浏览器）/ Start (no browser)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}\\server.js",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--no-open"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "启动 PhoneMic（游戏麦克风模式）/ Start (game mic)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}\\server.js",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--mic",
+        "--no-open"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "启动 PhoneMic（游戏麦克风 + 监听）/ Start (game mic + monitor)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}\\server.js",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--mic",
+        "--monitor",
+        "--no-open"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "查看可用播放设备 / List audio devices",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}\\server.js",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--list-devices"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "假手机测试（先启动服务）/ Fake phone test",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}\\tools\\fake-phone.js",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--port",
+        "8081",
+        "--seconds",
+        "5"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}

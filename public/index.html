@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="zh-CN" data-title="index.title">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a0e13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>手机麦克风</title>
+<script src="/i18n.js"></script>
+<style>
+  :root {
+    --bg: #0a0e13;
+    --card: #121821;
+    --card2: #18212c;
+    --line: #223040;
+    --text: #e8eef6;
+    --dim: #8595a8;
+    --accent: #38d39f;
+    --accent2: #22b8cf;
+    --danger: #ff6b6b;
+    --warn: #ffb454;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  body {
+    background:
+      radial-gradient(120% 60% at 50% -10%, #14324a 0%, transparent 60%),
+      radial-gradient(90% 50% at 50% 110%, #10261f 0%, transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: max(14px, env(safe-area-inset-top)) 18px max(14px, env(safe-area-inset-bottom));
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 6px 2px 0;
+  }
+  .brand { font-size: 15px; font-weight: 600; letter-spacing: .3px; opacity: .95; min-width: 0; }
+  .brand span { opacity: .5; font-weight: 400; margin-left: 6px; font-size: 13px; }
+  .right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .langbtn { padding: 4px 10px; border-radius: 99px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--dim); font-size: 12px; }
+
+  .status {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--card); border: 1px solid var(--line);
+    padding: 6px 12px; border-radius: 999px; font-size: 13px; color: var(--dim);
+  }
+  .status .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #46586b;
+    transition: background .3s, box-shadow .3s;
+  }
+  .status[data-s="live"] { color: var(--accent); border-color: #1d4d3c; }
+  .status[data-s="live"] .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: breathe 1.8s ease-in-out infinite; }
+  .status[data-s="connecting"] .dot { background: var(--warn); animation: breathe 1s ease-in-out infinite; }
+  .status[data-s="error"] { color: var(--danger); border-color: #56262a; }
+  .status[data-s="error"] .dot { background: var(--danger); }
+  @keyframes breathe { 50% { opacity: .35; } }
+
+  .banner {
+    margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+    background: rgba(255, 107, 107, .08);
+    border: 1px solid rgba(255, 107, 107, .3);
+    color: #ffc9c9; font-size: 13.5px; line-height: 1.6;
+  }
+  .banner.warn { background: rgba(255, 180, 84, .08); border-color: rgba(255, 180, 84, .3); color: #ffdda6; }
+  .banner b { color: #fff; }
+  .banner code { background: rgba(255,255,255,.09); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 10px 0 4px; }
+
+  .meter {
+    width: 100%; max-width: 340px; height: 12px; border-radius: 99px;
+    background: #0e1620; border: 1px solid var(--line); overflow: hidden; position: relative;
+  }
+  .meter i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px; transition: width .06s linear;
+  }
+  .meter.hot i { background: linear-gradient(90deg, var(--warn), var(--danger)); }
+
+  .micwrap { position: relative; display: grid; place-items: center; }
+  .micwrap::before, .micwrap::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid rgba(56, 211, 159, .45);
+    opacity: 0; pointer-events: none;
+  }
+  .micwrap.live::before { animation: ring 2.4s ease-out infinite; }
+  .micwrap.live::after { animation: ring 2.4s ease-out infinite 1.2s; }
+  @keyframes ring {
+    0% { transform: scale(1); opacity: .6; }
+    100% { transform: scale(1.55); opacity: 0; }
+  }
+
+  button.mic {
+    width: 148px; height: 148px; border-radius: 50%; border: 0; padding: 0;
+    display: grid; place-items: center; cursor: pointer;
+    color: #fff; background: linear-gradient(160deg, #2f8f6f, #1b5c47);
+    box-shadow: 0 12px 34px -12px rgba(56, 211, 159, .75), inset 0 1px 0 rgba(255,255,255,.14);
+    transition: transform .12s ease, background .3s, box-shadow .3s;
+    touch-action: manipulation;
+  }
+  button.mic:active { transform: scale(.95); }
+  button.mic svg { width: 62px; height: 62px; }
+  button.mic.live { background: linear-gradient(160deg, #b3392f, #7d2320); box-shadow: 0 12px 34px -12px rgba(255,107,107,.8), inset 0 1px 0 rgba(255,255,255,.14); }
+  button.mic:disabled { opacity: .45; cursor: default; }
+
+  .hint { font-size: 14px; color: var(--dim); text-align: center; max-width: 300px; min-height: 42px; }
+  .hint b { color: var(--text); font-weight: 600; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    width: 100%; max-width: 340px;
+  }
+  .stats div {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 9px 6px; text-align: center;
+  }
+  .stats span { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stats em { display: block; font-style: normal; font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+  details {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 0 14px; margin-top: 12px;
+  }
+  details[open] { padding-bottom: 12px; }
+  summary {
+    list-style: none; cursor: pointer; padding: 13px 0;
+    font-size: 14px; color: var(--dim); display: flex; justify-content: space-between; align-items: center;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "⌄"; font-size: 17px; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row label { font-size: 14px; }
+  .row small { display: block; color: var(--dim); font-size: 11.5px; margin-top: 1px; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 148px; height: 4px;
+    background: #2a3a4c; border-radius: 99px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 4px rgba(56,211,159,.15);
+  }
+  input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: var(--accent); }
+
+  .switch { position: relative; width: 48px; height: 28px; flex: 0 0 auto; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; z-index: 2; cursor: pointer; }
+  .switch i {
+    position: absolute; inset: 0; border-radius: 99px; background: #2a3a4c; transition: background .2s;
+  }
+  .switch i::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
+    border-radius: 50%; background: #93a4b8; transition: transform .2s, background .2s;
+  }
+  .switch input:checked + i { background: rgba(56,211,159,.28); }
+  .switch input:checked + i::after { transform: translateX(20px); background: var(--accent); }
+
+  footer { text-align: center; font-size: 11.5px; color: #4d5c6e; padding-top: 12px; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">🎙 <span data-i18n="index.brandText">手机麦克风</span><span id="devName"></span></div>
+  <div class="right">
+    <div class="status" id="status" data-s="idle"><span class="dot"></span><span id="statusText" data-i18n="index.statusIdle">未连接</span></div>
+    <button class="langbtn" type="button" data-lang-toggle>EN</button>
+  </div>
+</header>
+
+<div class="banner" id="banner" hidden></div>
+
+<main>
+  <div class="meter" id="meter"><i id="meterFill"></i></div>
+
+  <div class="micwrap" id="micwrap">
+    <button class="mic" id="btn" aria-label="开始" data-i18n-aria="index.startAria">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2.5" width="6" height="11" rx="3"></rect>
+        <path d="M5.5 10.5v1a6.5 6.5 0 0 0 13 0v-1"></path>
+        <path d="M12 18.5V21.5"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="hint" id="hint">点击话筒开始，手机就会变成电脑的麦克风</div>
+
+  <div class="stats">
+    <div><span id="statRate">--</span><em data-i18n="index.rate">采样率</em></div>
+    <div><span id="statLat">--</span><em data-i18n="index.latency">延迟</em></div>
+    <div><span id="statData">0</span><em data-i18n="index.sent">已发送</em></div>
+  </div>
+</main>
+
+<details>
+  <summary data-i18n="index.settings">声音设置</summary>
+
+  <div class="row">
+    <label for="gain"><span data-i18n="index.gain">麦克风音量</span><small data-i18n="index.gainHint">太小就调大，破音就调小</small></label>
+    <input type="range" id="gain" min="0.3" max="4" step="0.1" value="1.6">
+  </div>
+
+  <div class="row">
+    <label for="ec"><span data-i18n="index.ec">回声消除</span><small data-i18n="index.ecHint">手机喇叭贴近电脑音箱时打开</small></label>
+    <span class="switch"><input type="checkbox" id="ec" checked><i></i></span>
+  </div>
+
+  <div class="row">
+    <label for="ns"><span data-i18n="index.ns">噪声抑制</span><small data-i18n="index.nsHint">空调、风扇声比较明显时打开</small></label>
+    <span class="switch"><input type="checkbox" id="ns" checked><i></i></span>
+  </div>
+
+  <div class="row">
+    <label for="agc"><span data-i18n="index.agc">自动增益</span><small data-i18n="index.agcHint">说话声忽大忽小时打开</small></label>
+    <span class="switch"><input type="checkbox" id="agc" checked><i></i></span>
+  </div>
+
+  <div class="row">
+    <label for="mute"><span data-i18n="index.mute">静音</span><small data-i18n="index.muteHint">暂停收音但保持连接</small></label>
+    <span class="switch"><input type="checkbox" id="mute"><i></i></span>
+  </div>
+</details>
+
+<footer id="footer"></footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const t = (key, vars) => window.PMI18N.t(key, vars);
+  const params = new URLSearchParams(location.search);
+  const TOKEN = params.get('k') || '';
+
+  const el = {
+    status: $('status'), statusText: $('statusText'), banner: $('banner'),
+    btn: $('btn'), micwrap: $('micwrap'), meter: $('meter'), meterFill: $('meterFill'),
+    hint: $('hint'), rate: $('statRate'), lat: $('statLat'), data: $('statData'),
+    gain: $('gain'), ec: $('ec'), ns: $('ns'), agc: $('agc'), mute: $('mute'),
+    footer: $('footer'), devName: $('devName'),
+  };
+
+  const FRAME_MS = 20;
+
+  const state = {
+    live: false,
+    connecting: false,
+    ctx: null,
+    stream: null,
+    source: null,
+    node: null,
+    ws: null,
+    gain: 1.6,
+    muted: false,
+    sent: 0,
+    rtt: null,
+    retry: 0,
+    retryTimer: null,
+    wakeLock: null,
+    peak: 0,
+    level: 0,
+    meterRaf: 0,
+  };
+
+  // ---------------------------------------------------------------- 界面
+  function setStatus(s, text) {
+    el.status.dataset.s = s;
+    el.statusText.textContent = text;
+  }
+
+  function banner(html, kind) {
+    if (!html) { el.banner.hidden = true; return; }
+    el.banner.hidden = false;
+    el.banner.className = 'banner' + (kind === 'warn' ? ' warn' : '');
+    el.banner.innerHTML = html;
+  }
+
+  function fmtBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB';
+    return (n / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  // 环境自检：手机上 http:// 页面拿不到麦克风，必须提前说清楚
+  function preflight() {
+    if (!window.isSecureContext) {
+      banner(t('index.bannerInsecure'), 'warn');
+      el.btn.disabled = true;
+      el.hint.textContent = t('index.hintHttps');
+      return false;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      banner(t('index.bannerUnsupported'), 'warn');
+      el.btn.disabled = true;
+      return false;
+    }
+    return true;
+  }
+
+  // ---------------------------------------------------------------- 连接
+  function wsURL() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const q = new URLSearchParams();
+    if (TOKEN) q.set('k', TOKEN);
+    const s = q.toString();
+    return `${proto}//${location.host}/ws${s ? '?' + s : ''}`;
+  }
+
+  function connect() {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const ws = new WebSocket(wsURL());
+      ws.binaryType = 'arraybuffer';
+      state.ws = ws;
+
+      const timer = setTimeout(() => {
+        if (!settled) { settled = true; try { ws.close(); } catch (e) {} reject(new Error(t('index.errTimeout'))); }
+      }, 8000);
+
+      ws.onopen = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        state.retry = 0;
+        ws.send(JSON.stringify({
+          t: 'hello',
+          rate: state.ctx ? state.ctx.sampleRate : 48000,
+          name: navigator.userAgent.includes('iPhone') ? 'iPhone' : t('index.devicePhone'),
+        }));
+        resolve(ws);
+      };
+
+      ws.onmessage = (e) => {
+        if (typeof e.data !== 'string') return;
+        let m;
+        try { m = JSON.parse(e.data); } catch (err) { return; }
+        if (m.t === 'pong') state.rtt = Math.round(performance.now() - m.ts);
+      };
+
+      ws.onerror = () => {
+        if (!settled) { settled = true; clearTimeout(timer); reject(new Error(t('index.errConnect'))); }
+      };
+
+      ws.onclose = () => {
+        if (state.ws === ws) state.ws = null;
+        if (state.live) scheduleReconnect();
+      };
+    });
+  }
+
+  function scheduleReconnect() {
+    if (state.retryTimer) return;
+    state.retry = Math.min(state.retry + 1, 6);
+    const delay = Math.min(1000 * state.retry, 5000);
+    setStatus('connecting', t('index.statusConnecting'));
+    state.retryTimer = setTimeout(async () => {
+      state.retryTimer = null;
+      if (!state.live) return;
+      try {
+        await connect();
+        setStatus('live', t('index.statusLive'));
+        banner(null);
+      } catch (e) {
+        scheduleReconnect();
+      }
+    }, delay);
+  }
+
+  setInterval(() => {
+    const ws = state.ws;
+    if (ws && ws.readyState === 1) {
+      try { ws.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch (e) {}
+    }
+  }, 2000);
+
+  // ---------------------------------------------------------------- 采音
+  async function buildPipeline() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    state.ctx = ctx;
+    await ctx.resume();
+
+    el.rate.textContent = (ctx.sampleRate / 1000).toFixed(1) + 'k';
+
+    // 无论用哪条路径，最后都接一个音量 0 的增益到 destination：
+    // 浏览器只会拉取「能连到扬声器」的音频节点，这样处理链才会持续运行。
+    const sink = ctx.createGain();
+    sink.gain.value = 0;
+    sink.connect(ctx.destination);
+    state.sink = sink;
+
+    if (ctx.audioWorklet && typeof AudioWorkletNode === 'function') {
+      await ctx.audioWorklet.addModule('/worklet.js');
+      const node = new AudioWorkletNode(ctx, 'capture', {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+        channelCount: 1,
+        channelCountMode: 'explicit',
+        processorOptions: { frameMs: FRAME_MS },
+      });
+      node.port.onmessage = (e) => onFrame(e.data);
+      node.connect(sink);
+      node.port.postMessage({ gain: state.gain, muted: state.muted });
+      state.node = node;
+      state.usingWorklet = true;
+    } else {
+      // 老浏览器（iOS 14.5 之前）退回到 ScriptProcessor
+      const node = ctx.createScriptProcessor(4096, 1, 1);
+      const frame = Math.round(ctx.sampleRate * FRAME_MS / 1000);
+      const acc = new Float32Array(frame);
+      let n = 0;
+      node.onaudioprocess = (e) => {
+        const ch = e.inputBuffer.getChannelData(0);
+        let i = 0;
+        while (i < ch.length) {
+          const take = Math.min(frame - n, ch.length - i);
+          acc.set(ch.subarray(i, i + take), n);
+          n += take; i += take;
+          if (n === frame) {
+            const out = new Int16Array(frame);
+            const g = state.gain;
+            for (let k = 0; k < frame; k++) {
+              let v = acc[k] * g;
+              if (v > 1) v = 1; else if (v < -1) v = -1;
+              out[k] = v < 0 ? v * 0x8000 : v * 0x7fff;
+            }
+            onFrame(out.buffer);
+            n = 0;
+          }
+        }
+      };
+      node.connect(sink);
+      state.node = node;
+      state.usingWorklet = false;
+    }
+
+    await attachMic();
+  }
+
+  function audioConstraints() {
+    return {
+      audio: {
+        channelCount: 1,
+        echoCancellation: el.ec.checked,
+        noiseSuppression: el.ns.checked,
+        autoGainControl: el.agc.checked,
+      },
+      video: false,
+    };
+  }
+
+  async function attachMic() {
+    const stream = await navigator.mediaDevices.getUserMedia(audioConstraints());
+    const source = state.ctx.createMediaStreamSource(stream);
+    source.connect(state.node);
+    const old = state.source;
+    const oldStream = state.stream;
+    state.source = source;
+    state.stream = stream;
+    if (old) { try { old.disconnect(); } catch (e) {} }
+    if (oldStream) oldStream.getTracks().forEach((t) => t.stop());
+  }
+
+  function onFrame(buffer) {
+    const pcm = new Int16Array(buffer);
+
+    // 电平显示
+    let sum = 0;
+    for (let i = 0; i < pcm.length; i++) { const v = pcm[i] / 32768; sum += v * v; }
+    const rms = Math.sqrt(sum / pcm.length);
+    if (rms > state.level) state.level = rms;
+
+    state.sent += buffer.byteLength;
+    const ws = state.ws;
+    if (!ws || ws.readyState !== 1) return;
+    if (ws.bufferedAmount > 400000) return; // 网络卡了就丢帧，别让内存炸掉
+    try { ws.send(pcm); } catch (e) {}
+  }
+
+  // ---------------------------------------------------------------- 电平平滑
+  function startMeter() {
+    if (state.meterRaf) return;
+    const loop = () => {
+      const target = Math.min(1, state.level * 5);
+      state.peak = Math.max(target, state.peak * 0.86);
+      state.level *= 0.6;
+      const pct = Math.min(100, state.peak * 100);
+      el.meterFill.style.width = pct + '%';
+      el.meter.classList.toggle('hot', pct > 88);
+      state.meterRaf = requestAnimationFrame(loop);
+    };
+    loop();
+  }
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator && state.live) {
+        state.wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) { /* 部分浏览器不支持，忽略 */ }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.live) requestWakeLock();
+  });
+
+  // ---------------------------------------------------------------- 启停
+  async function start() {
+    if (state.live || state.connecting) return;
+    state.connecting = true;
+    el.btn.disabled = true;
+    setStatus('connecting', t('index.statusPreparing'));
+    banner(null);
+
+    try {
+      await buildPipeline();
+
+      setStatus('connecting', t('index.statusLinking'));
+      await connect();
+
+      state.live = true;
+      state.connecting = false;
+      el.btn.disabled = false;
+      el.btn.classList.add('live');
+      el.micwrap.classList.add('live');
+      el.hint.innerHTML = t('index.hintLive');
+      setStatus('live', t('index.statusLive'));
+      state.level = 0;
+      startMeter();
+      requestWakeLock();
+    } catch (err) {
+      state.connecting = false;
+      el.btn.disabled = false;
+      await teardown();
+      setStatus('error', t('index.statusError'));
+
+      const name = err && err.name ? err.name : '';
+      let msg = (err && err.message) || String(err);
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        msg = t('index.bannerPerm');
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        msg = t('index.bannerNoMic');
+      } else if (name === 'NotReadableError') {
+        msg = t('index.bannerBusy');
+      } else if (/NotSecure|getUserMedia/i.test(msg)) {
+        msg = t('index.bannerNotSecure');
+      }
+      banner(msg);
+      el.hint.textContent = t('index.hintRetry');
+    }
+  }
+
+  async function teardown() {
+    stopMeter();
+    state.live = false;
+    el.btn.classList.remove('live');
+    el.micwrap.classList.remove('live');
+
+    if (state.ws) {
+      try { state.ws.onclose = null; state.ws.close(); } catch (e) {}
+      state.ws = null;
+    }
+    if (state.retryTimer) { clearTimeout(state.retryTimer); state.retryTimer = null; }
+
+    if (state.source) { try { state.source.disconnect(); } catch (e) {} state.source = null; }
+    if (state.node) { try { state.node.disconnect(); } catch (e) {} state.node = null; }
+    if (state.sink) { try { state.sink.disconnect(); } catch (e) {} state.sink = null; }
+    if (state.stream) { state.stream.getTracks().forEach((t) => t.stop()); state.stream = null; }
+    if (state.ctx) { try { await state.ctx.close(); } catch (e) {} state.ctx = null; }
+
+    if (state.wakeLock) { try { await state.wakeLock.release(); } catch (e) {} state.wakeLock = null; }
+  }
+
+  async function stop() {
+    await teardown();
+    setStatus('idle', t('index.statusStopped'));
+    el.hint.textContent = t('index.hintRestart');
+    el.rate.textContent = '--';
+    el.lat.textContent = '--';
+    el.meterFill.style.width = '0%';
+  }
+
+  function stopMeter() {
+    if (state.meterRaf) cancelAnimationFrame(state.meterRaf);
+    state.meterRaf = 0;
+    state.peak = 0;
+  }
+
+  el.btn.addEventListener('click', () => {
+    if (state.live) stop();
+    else start();
+  });
+
+  // ---------------------------------------------------------------- 设置
+  el.gain.addEventListener('input', () => {
+    state.gain = Number(el.gain.value);
+    if (state.node && state.node.port) state.node.port.postMessage({ gain: state.gain });
+  });
+
+  el.mute.addEventListener('change', () => {
+    state.muted = el.mute.checked;
+    if (state.node && state.node.port) state.node.port.postMessage({ muted: state.muted });
+    if (state.ws && state.ws.readyState === 1) {
+      try { state.ws.send(JSON.stringify({ t: 'mute', value: state.muted })); } catch (e) {}
+    }
+    if (state.live) {
+      setStatus(
+        state.muted ? 'connecting' : 'live',
+        state.muted ? t('index.statusMuted') : t('index.statusLive'),
+      );
+      el.hint.innerHTML = state.muted ? t('index.hintMuted') : t('index.hintLive');
+    }
+  });
+
+  // 切换音效开关后实时重开一次麦克风，不用整个重启
+  let reattaching = false;
+  async function reattach() {
+    if (!state.live || reattaching) return;
+    reattaching = true;
+    try { await attachMic(); } catch (e) { banner(t('index.bannerSettings', { message: e.message })); }
+    reattaching = false;
+  }
+  el.ec.addEventListener('change', reattach);
+  el.ns.addEventListener('change', reattach);
+  el.agc.addEventListener('change', reattach);
+
+  // ---------------------------------------------------------------- 状态刷新
+  setInterval(() => {
+    el.data.textContent = fmtBytes(state.sent);
+    el.lat.textContent = state.rtt === null ? '--' : state.rtt + 'ms';
+  }, 400);
+
+  window.addEventListener('beforeunload', () => {
+    if (state.stream) state.stream.getTracks().forEach((t) => t.stop());
+  });
+
+  el.footer.textContent = location.host;
+  state.gain = Number(el.gain.value);
+  if (preflight()) el.hint.textContent = t('index.hintStart');
+  startMeter();
+})();
+</script>
+</body>
+</html>

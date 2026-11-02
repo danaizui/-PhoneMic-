@@ -1,0 +1,12 @@
+# 行尾与编码约定：批处理/快速上手必须是 CRLF，其余源文件用 LF
+* text=auto
+*.bat -text
+*.cmd -text
+*.txt -text
+*.cs text eol=crlf
+*.md text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.svg text eol=lf
